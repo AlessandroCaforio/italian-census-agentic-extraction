@@ -16,6 +16,73 @@ The same challenge applies to the 1921 Population Census (*Censimento della Popo
 
 ---
 
+## What the Source Material Looks Like
+
+The original census volumes are large scanned PDFs -- each containing dozens of pages of typewritten tables. Here is a raw page from the 1927 Industrial Census:
+
+<p align="center">
+  <img src="images/original_full_page.png" width="600" alt="Original full census page from 1927" />
+  <br><em>A raw page from the original census volume -- typewritten tables with 5-6 data columns per province</em>
+</p>
+
+The first step in our pipeline was to **crop these full-volume PDFs into individual two-page pairs** (one pair per province table), producing files like `pair_0019.pdf`:
+
+<p align="center">
+  <img src="images/cropped_pair_example.png" width="600" alt="Cropped pair showing BARI DELLE PUGLIE" />
+  <br><em>A cropped pair (pair_0019.pdf) -- BARI DELLE PUGLIE, extracted and ready for the AI agent</em>
+</p>
+
+For the 1921 Population Census, a similar approach was used -- region-level PDFs were extracted from the original volumes:
+
+<p align="center">
+  <img src="images/popolazione_1921_example.png" width="600" alt="1921 Population Census page" />
+  <br><em>A page from the 1921 Population Census (TAVOLA XX) -- literacy data by municipality</em>
+</p>
+
+> Sample PDFs are included in [`data/`](data/) so you can see the full before-and-after workflow.
+
+---
+
+## From Full Volume to Cropped Pairs: The PDF Pipeline
+
+The original census exists as a single large volume split into ~17 PDF parts (`IST0007118CIC1927Vol1...part001.pdf` through `part017.pdf`). Each part contains multiple province tables spanning consecutive pages.
+
+**The cropping workflow:**
+
+```
+ Original Volume (17 parts, ~102 MB total)
+          │
+          ▼
+ ┌──────────────────────────────┐
+ │  Manual page-range mapping   │  ← Identify which pages belong to which province
+ │  (config.json)               │
+ └──────────────┬───────────────┘
+                │
+                ▼
+ ┌──────────────────────────────┐
+ │  PyPDF page extraction       │  ← Extract 2-page spreads (left: names, right: data)
+ │  → pair_0000.pdf             │
+ │  → pair_0001.pdf             │
+ │  → ...                       │
+ │  → pair_0187.pdf             │
+ └──────────────┬───────────────┘
+                │
+                ▼
+        188 individual PDFs
+        (~500 KB each, ~93 MB total)
+        One pair = one province table
+```
+
+**Why pairs?** Each province's data is printed as a two-page spread:
+- **Left page**: Municipality names with sequential numbering (N. d'ordine)
+- **Right page**: Numerical data columns (establishments, workers, wine/liquor sales)
+
+The AI agent reads both pages together and cross-references the row numbers to align names with data -- exactly as a human researcher would.
+
+For provinces with many municipalities, the table spans multiple pairs (e.g., ALESSANDRIA uses pairs 0001-0006 for 343 municipalities). The `numero_ordine` continues across files, and the agents handle this seamlessly.
+
+---
+
 ## Architecture Overview
 
 ```
@@ -299,40 +366,47 @@ The agents learned to detect this pattern and handle it autonomously.
 
 ---
 
-## Project Structure
+## Repository Structure
 
 ```
 .
-├── opus46/                          # Industrial Census 1927 extraction
-│   ├── census_extractor.py         # CLI: status, next, validate, compare
-│   ├── run_extraction.sh           # Parallel agent orchestrator
-│   ├── fill_csv.py                 # Province review & CSV fill workflow
-│   ├── notes.md                    # Cumulative learnings (100+ entries)
-│   ├── pair_0000.json              # Extracted data (190 files)
-│   └── ...
+├── README.md
+├── LICENSE
 │
-├── mistral/extraction/              # Population Census 1921 extraction
-│   └── popolazione/
-│       ├── run_ocr.py              # Mistral OCR API (cached)
-│       ├── parse_and_match.py      # Parse markdown → structured data
-│       ├── crosswalk_match.py      # Fuzzy municipality matching
-│       ├── validate_values.py      # Visual validation CLI
-│       └── fill_missing_1921.csv   # 1,828 gap-filling rows
+├── data/                                # Sample PDFs (before & after cropping)
+│   ├── original_pdf/                   # Raw census volume parts (~3.6 MB each)
+│   │   ├── IST0007118...part001.pdf   # Original multi-page volume part
+│   │   └── IST0007118...part003.pdf
+│   ├── cropped_pairs/                  # Individual province pairs (~500 KB each)
+│   │   ├── pair_0001.pdf              # AGRIGENTO
+│   │   ├── pair_0015.pdf              # AREZZO (100% accuracy)
+│   │   ├── pair_0019.pdf              # BARI (100% accuracy)
+│   │   ├── pair_0028.pdf              # BOLOGNA (100% accuracy)
+│   │   └── pair_0060.pdf              # CREMONA
+│   └── popolazione_1921/              # Population census samples
+│       ├── Piemonte_popolazione_extracted.pdf
+│       └── Toscana_popolazione_extracted.pdf
 │
-├── src/                             # Core pipeline
-│   ├── main.py                     # Pipeline orchestrator
-│   ├── llm_structure.py            # Claude vision integration
-│   ├── build_crosswalk.py          # 1921-1954 municipality crosswalk
-│   ├── extract_ind_workers.py      # Field detection & CSV matching
-│   ├── convert_pdf.py              # PDF → image conversion
-│   └── merge_validate.py           # Merge & validation
+├── images/                             # Screenshots for this README
+│   ├── original_full_page.png         # Raw census page
+│   ├── cropped_pair_example.png       # Cropped pair (BARI)
+│   └── popolazione_1921_example.png   # Population census page
 │
-├── output/                          # Final outputs
-│   ├── crosswalk_1921_1954.csv     # 7,803 municipalities mapped
-│   └── territory_transfers.csv     # Boundary change documentation
+├── scripts/                            # All pipeline scripts
+│   ├── run_extraction.sh              # Parallel agent orchestrator (bash)
+│   ├── census_extractor.py            # CLI: status, next, validate, compare
+│   ├── main.py                        # Pipeline orchestrator
+│   ├── llm_structure.py               # Claude vision integration
+│   ├── build_crosswalk.py             # 1921-1954 municipality crosswalk
+│   ├── extract_ind_workers.py         # Field detection & CSV matching
+│   ├── run_ocr.py                     # Mistral OCR API
+│   ├── parse_and_match.py             # Parse OCR markdown → structured data
+│   └── validate_values.py             # Visual validation CLI
 │
-├── CLAUDE.md                        # Agent instructions
-└── pre-war-covariates-complete_updated.csv  # Master dataset (7,770 rows)
+└── examples/                           # Sample outputs & agent instructions
+    ├── CLAUDE.md                      # The instruction file agents receive
+    ├── sample_extraction.json         # Example output (BARI DELLE PUGLIE)
+    └── skip_marker.json               # How non-extractable PDFs are handled
 ```
 
 ---
