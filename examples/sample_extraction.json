@@ -1,0 +1,18 @@
+{
+  "provincia": "BARI DELLE PUGLIE",
+  "comuni": [
+    {"numero_ordine": 1, "comune": "Acquaviva delle Fonti", "complesso_esercizi": 344, "complesso_addetti": 726, "commercio_esercizi": null, "commercio_addetti": 220, "vendita_vino": 3, "vendita_liquori": 1},
+    {"numero_ordine": 2, "comune": "Alberobello", "complesso_esercizi": 260, "complesso_addetti": 556, "commercio_esercizi": null, "commercio_addetti": 183, "vendita_vino": 10, "vendita_liquori": 8},
+    {"numero_ordine": 3, "comune": "Altamura", "complesso_esercizi": 990, "complesso_addetti": 1724, "commercio_esercizi": null, "commercio_addetti": 600, "vendita_vino": 28, "vendita_liquori": 11},
+    {"numero_ordine": 4, "comune": "Andria", "complesso_esercizi": 1986, "complesso_addetti": 3545, "commercio_esercizi": null, "commercio_addetti": 1803, "vendita_vino": 102, "vendita_liquori": 31},
+    {"numero_ordine": 5, "comune": "Bari delle Puglie", "complesso_esercizi": 4509, "complesso_addetti": 23316, "commercio_esercizi": null, "commercio_addetti": 7153, "vendita_vino": 237, "vendita_liquori": 82}
+  ],
+  "totale_provincia": {
+    "complesso_esercizi": 25610,
+    "complesso_addetti": 71523,
+    "commercio_esercizi": null,
+    "commercio_addetti": 24180,
+    "vendita_vino": 1197,
+    "vendita_liquori": 509
+  }
+}
