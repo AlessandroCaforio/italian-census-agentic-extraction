@@ -177,6 +177,23 @@ The core pipeline. Each of the 188 PDFs shows a two-page spread with a typewritt
 }
 ```
 
+### End-to-End Example: BARI DELLE PUGLIE
+
+All sample files for this province are included in the repo so you can follow the complete pipeline:
+
+| Stage | File | What it contains |
+|-------|------|-----------------|
+| **1. Source PDF** | [`data/cropped_pairs/pair_0019.pdf`](data/cropped_pairs/pair_0019.pdf) | The scanned two-page spread (shown in screenshot above) |
+| **2. Agent output** | [`examples/sample_extraction.json`](examples/sample_extraction.json) | Structured JSON extracted by Claude's vision |
+| **3. Final dataset** | [`examples/bari_covariates.csv`](examples/bari_covariates.csv) | The 47 BARI municipalities in the master CSV |
+
+Notice how names evolve across the pipeline:
+- Census (1927): *"Bari delle Puglie"* → CSV (1950): **BARI**
+- Census (1927): *"Gioja dal Collo"* → CSV (1950): **GIOIA DEL COLLE**
+- Census (1927): *"Cellammare"* → CSV (1950): **CELLAMARE**
+
+The fuzzy matching engine in `extract_ind_workers.py` handles these automatically, and the `ind_workers_1927` column in the CSV was populated from `complesso_addetti` in the JSON. For BARI, **100% of the 44 comparable values matched exactly** -- the agent read the 1927 typeface perfectly.
+
 ### Pipeline 2: Population Census 1921 (Mistral OCR + Crosswalk)
 
 Before settling on Claude's vision, we built a separate pipeline using **Mistral's OCR API** for the 1921 population census:
